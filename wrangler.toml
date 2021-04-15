@@ -1,0 +1,7 @@
+name = "cache"
+type = "webpack"
+account_id = "2efd500b926561a9a9826116986c897a"
+workers_dev = true
+route = ""
+zone_id = ""
+webpack_config = "webpack.config.js"
