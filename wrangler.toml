@@ -5,3 +5,10 @@ workers_dev = true
 route = ""
 zone_id = ""
 webpack_config = "webpack.config.js"
+
+
+kv_namespaces = [ 
+	 { binding = "DATA", id = "6c988850d9bf40c6861ab1b300ffff2b", preview_id="6c988850d9bf40c6861ab1b300ffff2b"},
+	 { binding = "TIMESTAMP", id = "bf047411ff7a4e7f9668e4b59d5fef9c", preview_id="bf047411ff7a4e7f9668e4b59d5fef9c"}
+]
+

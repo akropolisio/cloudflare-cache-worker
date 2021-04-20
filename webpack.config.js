@@ -3,9 +3,12 @@ const webpack = require("webpack");
 
 const mode = process.env.NODE_ENV || "production";
 
+const Dotenv = require("dotenv-webpack");
+
 module.exports = {
   target: "webworker",
   mode: "production",
+  context: __dirname,
   entry: "./src/index.ts",
   output: {
     filename: `worker.${mode}.js`,
@@ -27,4 +30,5 @@ module.exports = {
       },
     ],
   },
+  plugins: [new Dotenv()],
 };

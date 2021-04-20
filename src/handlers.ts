@@ -1,43 +1,43 @@
+let GOOGLE_KEY = process.env.GOOGLE_KEY;
+
 export async function handleRequest(event: FetchEvent) {
   const request = event.request;
 
   const url = getParameterByName(new URL(request.url), "url");
 
   if (url != null) {
-    const cacheUrl = new URL(url);
+    let cacheUrl = new URL(url);
 
-    // Construct the cache key from the cache URL
-    const cacheKey = new Request(cacheUrl.toString(), request);
-    const cache = caches.default;
-
-    // Check whether the value is already available in the cache
-    // if not, you will need to fetch it from origin, and store it in the cache
-    // for future access
-    let response = await cache.match(cacheKey);
-
-    if (!response) {
-      // If not in cache, get it from origin
-      response = await fetch(cacheUrl.toString());
-
-      // Must use Response constructor to inherit all of response's fields
-      response = new Response(response.body, response);
-
-      // Cache API respects Cache-Control headers. Setting s-max-age to 400
-      // will limit the response to be in cache for 10 seconds max
-
-      // Any changes made to the response here will be reflected in the cached value
-      response.headers.append("Cache-Control", "s-maxage=400");
-
-      // Store the fetched response as cacheKey
-      // Use waitUntil so you can return the response without blocking on
-      // writing to cache
-      event.waitUntil(cache.put(cacheKey, response.clone()));
+    if (GOOGLE_KEY !== undefined) {
+      cacheUrl.searchParams.set("key", GOOGLE_KEY);
     }
-    return response;
+
+    let json = await DATA.get(cacheUrl.toString());
+
+    if (!json) {
+      // If not in cache, get it from origin
+      const request = new Request(cacheUrl.toString(), event.request);
+
+      request.headers.set("Origin", new URL(cacheUrl.toString()).origin);
+
+      const response = await fetch(request);
+
+      json = JSON.stringify(await response.json());
+
+      DATA.put(cacheUrl.toString(), json, { expirationTtl: 86400 });
+    }
+
+    return new Response(json, {
+      headers: {
+        "content-type": "application/json;charset=UTF-8",
+        "Content-type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+      status: 200,
+    });
   } else {
     return new Response("Incorrect URL", {
       headers: {
-        "content-type": "application/json;charset=UTF-8",
         "Content-type": "application/json",
         "Access-Control-Allow-Origin": "*",
       },
@@ -61,3 +61,35 @@ function getParameterByName(url: URL, name: string): string | null {
 
   return decodeURIComponent(results[2].replace(/\+/g, " "));
 }
+
+export function handleOptions(request: Request) {
+  // Make sure the necesssary headers are present
+  // for this to be a valid pre-flight request
+  if (
+    request.headers.get("Origin") !== null &&
+    request.headers.get("Access-Control-Request-Method") !== null &&
+    request.headers.get("Access-Control-Request-Headers") !== null
+  ) {
+    // Handle CORS pre-flight request.
+    // If you want to check the requested method + headers
+    // you can do that here.
+    return new Response(null, {
+      headers: corsHeaders,
+    });
+  } else {
+    // Handle standard OPTIONS request.
+    // If you want to allow other HTTP Methods, you can do that here.
+    return new Response(null, {
+      headers: {
+        Allow: "GET, HEAD, POST, OPTIONS",
+      },
+    });
+  }
+}
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET,HEAD,POST,OPTIONS",
+  "Access-Control-Max-Age": "86400",
+  "Access-Control-Allow-Headers": "*",
+};
